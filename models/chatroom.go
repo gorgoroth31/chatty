@@ -28,11 +28,11 @@ func GetChatroomInstance() *chatroom {
 	return singleInstance
 }
 
-func resetInstance() {
-	if singleInstance != nil {
-		lock.Lock()
-		defer lock.Unlock()
-		fmt.Println("Resetting room instance now.")
-		singleInstance = &chatroom{}
+func (chatRoom *chatroom) SendMessage(message Message) {
+	if chatRoom.SignalrClient == nil {
+		fmt.Println("Not connected")
+		return
 	}
+
+	chatRoom.SignalrClient.Send("SendChatMessage", message)
 }

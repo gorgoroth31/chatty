@@ -1,107 +1,50 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"log"
 	"os"
-	"strings"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	kitlog "github.com/go-kit/log"
-	"github.com/google/uuid"
 	"github.com/gorgoroth31/chatty/models"
 	"github.com/philippseith/signalr"
 )
 
 type receiver struct {
 	signalr.Receiver
+	View *tea.Program
 }
 
 func (r *receiver) Receive(message models.Message) {
 	if message.User.Id == models.GetUserInstance().Id {
 		return
 	}
-	fmt.Println(message.User.Name + ": " + message.Text)
+
+	teaMsg := tea.Msg("message-received")
+
+	r.View.Send(teaMsg)
+	// hier muss ich irgendwie auf viewmodel zugreifen und message anhängen
 }
 
-func (r *receiver) InfoText(message string) {
-	fmt.Println(message)
-}
-
-func handleClient(ipaddr string) {
+func handleClient(ipaddr string, p *tea.Program) {
 	chatroom := models.GetChatroomInstance()
 	chatroom.IsHost = false
 
-	joinSignalR(ipaddr)
-
-	inputLoop()
+	joinSignalR(ipaddr, p)
 }
 
-func inputLoop() {
-	for {
-		if isChatroomOpened {
-			break
-		}
-		time.Sleep(1 * time.Second)
-	}
-
-	fmt.Print("Enter your desired username:\n> ")
-
-	in := bufio.NewReader(os.Stdin)
-
-	username, err := in.ReadString('\n')
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	user := models.GetUserInstance()
-
-	sanitizedUsername := strings.TrimSpace(username)
-
-	user.Name = sanitizedUsername
-
-	for {
-		textIn := bufio.NewReader(os.Stdin)
-		text, err := textIn.ReadString('\n')
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		text = strings.TrimSpace(text)
-
-		message := models.Message{
-			User: *models.GetUserInstance(),
-			Text: text,
-			Time: time.Now(),
-			Id:   uuid.New(),
-		}
-
-		sendMessage(message)
-	}
-}
-
-func sendMessage(message models.Message) {
-	chatRoom := models.GetChatroomInstance()
-	if chatRoom.SignalrClient == nil {
-		fmt.Println("Not connected")
-		return
-	}
-
-	chatRoom.SignalrClient.Send("SendChatMessage", message)
-}
-
-func joinSignalR(ipaddress string) {
+func joinSignalR(ipaddress string, p *tea.Program) {
 	go func() {
 		address := "http://" + ipaddress + ":8080/chat"
 
 		chatRoom := models.GetChatroomInstance()
 
 		c, err := signalr.NewClient(context.Background(), nil,
-			signalr.WithReceiver(&receiver{}),
+			signalr.WithReceiver(&receiver{
+				View: p,
+			}),
 			signalr.WithConnector(func() (signalr.Connection, error) {
 				creationCtx, _ := context.WithTimeout(context.Background(), 2*time.Second)
 				return signalr.NewHTTPConnection(creationCtx, address)
@@ -118,6 +61,5 @@ func joinSignalR(ipaddress string) {
 		chatRoom.SignalrClient = c
 
 		fmt.Println("Client started")
-		isChatroomOpened = true
 	}()
 }

@@ -7,8 +7,9 @@ import (
 )
 
 type Message struct {
-	Id   uuid.UUID
-	User User
-	Text string
-	Time time.Time
+	Id     uuid.UUID
+	User   User
+	UserIp string
+	Text   string
+	Time   time.Time
 }

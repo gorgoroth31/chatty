@@ -11,7 +11,7 @@ import (
 	"github.com/philippseith/signalr"
 )
 
-func handleHost() {
+func startServer() {
 	chatroom := models.GetChatroomInstance()
 	chatroom.IsHost = true
 
@@ -29,15 +29,10 @@ func handleHost() {
 		ip := GetLocalIP()
 		port := ":8080"
 		fmt.Println("Chatroom open on: " + ip.String() + port)
-		isChatroomOpened = true
 		if err := http.ListenAndServe(ip.String()+port, router); err != nil {
 			log.Fatal(err)
 		}
 	}()
-
-	joinSignalR(GetLocalIP().String())
-
-	inputLoop()
 }
 
 type chat struct {
