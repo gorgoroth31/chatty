@@ -12,6 +12,10 @@ type ViewModel struct {
 	InputText string
 }
 
+type MessageReceivedMsg struct {
+	Message Message
+}
+
 func (m ViewModel) View() string {
 	s := "Chatty - Your chat client"
 
@@ -25,13 +29,11 @@ func (m ViewModel) View() string {
 }
 
 func (m ViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if msg == "message-received" {
-
-		m.Messages = append(m.Messages, Message{Text: "message received"})
-		return m, nil
-	}
-
 	switch msg := msg.(type) {
+
+	case MessageReceivedMsg:
+		m.Messages = append(m.Messages, msg.Message)
+		return m, nil
 
 	// Is it a key press?
 	case tea.KeyMsg:

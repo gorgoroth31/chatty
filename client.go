@@ -18,14 +18,8 @@ type receiver struct {
 }
 
 func (r *receiver) Receive(message models.Message) {
-	if message.User.Id == models.GetUserInstance().Id {
-		return
-	}
-
-	teaMsg := tea.Msg("message-received")
-
-	r.View.Send(teaMsg)
-	// hier muss ich irgendwie auf viewmodel zugreifen und message anhängen
+	msg := models.MessageReceivedMsg{Message: message}
+	r.View.Send(msg)
 }
 
 func handleClient(ipaddr string, p *tea.Program) {
